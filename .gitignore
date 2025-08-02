@@ -1,0 +1,66 @@
+# Python 관련
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-wheel-metadata/
+*.log
+
+# 가상환경(venv)
+venv/
+.venv/
+ENV/
+env/
+.venv.bak/
+
+# IDE/에디터 파일
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+*.DS_Store
+
+# 운영체제 특화
+Thumbs.db
+.DS_Store
+ehthumbs.db
+Icon?
+
+# 환경 변수/비밀키
+.env
+.env.*
+.envrc
+
+# 테스트, 커버리지, 린트
+.coverage
+.tox/
+.nox/
+.cache/
+pytest_cache/
+htmlcov/
+
+# Jupyter/IPython 노트북
+.ipynb_checkpoints/
+
+# MyPy, Pyright 등
+.mypy_cache/
+.pyrightcache/
+
+# FastAPI 문서용
+openapi.json
+docs/
+
+# 파이썬 빌드/배포 관련
+site/
+man/
+
+# api 실행 시 생성된 json 파일
+*.json
