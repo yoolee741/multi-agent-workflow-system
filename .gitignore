@@ -65,3 +65,5 @@ man/
 # api 실행 시 생성된 json 파일
 *.json
 *.md
+
+/data

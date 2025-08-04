@@ -1,0 +1,66 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: "1G"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+    depends_on:
+      - db
+
+  db:
+    container_name: db
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_LOGGING: "on"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: "2G"
+        reservations:
+          cpus: "0.5"
+          memory: "1G"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+    ports:
+      - "5433:5432"
+    command:
+      - postgres
+      - -c
+      - "shared_preload_libraries=pg_stat_statements"
+      - -c
+      - "pg_stat_statements.track=all"
+      - -c
+      - "pg_stat_statements.max=10000"
+      - -c
+      - "pg_stat_statements.track_utility=on"
+      - -c
+      - "statement_timeout=100000"
+      - -c
+      - "idle_in_transaction_session_timeout=100000"
