@@ -36,6 +36,7 @@ import asyncio
 from app.agents.data_collector import DataCollectorAgent
 from app.agents.budget_manager import BudgetManagerAgent
 from app.agents.itinerary_builder import ItineraryBuilderAgent
+from app.agents.report_generator import ReportGeneratorAgent
 from pathlib import Path
 
 async def run_workflow(workflow_id: str, input_path: str, output_path: str):
@@ -76,5 +77,22 @@ async def run_workflow(workflow_id: str, input_path: str, output_path: str):
         "status": "success",
         "result": dc_result
     })
+    
+    # 3단계: ReportGeneratorAgent 단독 실행 (예외 처리 포함)
+    rg_agent = ReportGeneratorAgent(workflow_id, Path(input_path), Path(output_path))
+    try:
+        rg_result = await rg_agent.run()
+        results.append({
+            "agent": rg_agent.__class__.__name__,
+            "status": "success",
+            "result": rg_result
+        })
+    except Exception as e:
+        results.append({
+            "agent": rg_agent.__class__.__name__,
+            "status": "error",
+            "error": str(e)
+        })
+
     return results
 

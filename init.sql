@@ -54,6 +54,7 @@ comment on column data_collector.workflow_id is '워크플로우 ID';
 comment on column data_collector.started_at is '시작 시간';
 comment on column data_collector.ended_at is '종료 시간';
 comment on column data_collector.status is 'data_collector agent의 상태 - `pending`, `running`, `completed`, `failed`';
+comment on column data_collector.response is '반환값 - 성공 응답값 || 실패 에러값';
 
 create table if not exists itinerary_builder
 (
@@ -72,6 +73,7 @@ comment on column itinerary_builder.workflow_id is '워크플로우 ID';
 comment on column itinerary_builder.started_at is '시작 시간';
 comment on column itinerary_builder.ended_at is '종료 시간';
 comment on column itinerary_builder.status is 'itinerary_builder agent의 상태 - `pending`, `running`, `completed`, `failed`';
+comment on column itinerary_builder.response is '반환값 - 성공 응답값 || 실패 에러값';
 
 create table if not exists budget_manager
 (
@@ -90,6 +92,7 @@ comment on column budget_manager.workflow_id is '워크플로우 ID';
 comment on column budget_manager.started_at is '시작 시간';
 comment on column budget_manager.ended_at is '종료 시간';
 comment on column budget_manager.status is 'budget_manager agent의 상태 - `pending`, `running`, `completed`, `failed`';
+comment on column budget_manager.response is '반환값 - 성공 응답값 || 실패 에러값';
 
 create table if not exists report_generator
 (
@@ -108,4 +111,4 @@ comment on column report_generator.workflow_id is '워크플로우 ID';
 comment on column report_generator.started_at is '시작 시간';
 comment on column report_generator.ended_at is '종료 시간';
 comment on column report_generator.status is 'report_generator agent의 상태 - `pending`, `running`, `completed`, `failed`';
-
+comment on column report_generator.response is '반환값 - 성공 응답값 || 실패 에러값';
