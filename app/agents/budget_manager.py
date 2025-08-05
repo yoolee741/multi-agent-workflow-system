@@ -7,6 +7,7 @@ from datetime import datetime
 from app.db.utils import save_agent_response  # DB 저장 함수
 from app.db.database import connect_db
 from app.agents.utils import check_agent_status  # 상태 체크 함수 import
+from app.api.websocket import notify_workflow_update
 
 class BudgetManagerAgent(BaseAgent):
     async def run(self):
@@ -18,6 +19,9 @@ class BudgetManagerAgent(BaseAgent):
                     "UPDATE budget_manager SET status = 'running', started_at = $1 WHERE workflow_id = $2",
                     datetime.utcnow(), self.workflow_id
                 )
+
+                # 상태 변경 알림 웹소켓 푸시
+                await notify_workflow_update(self.workflow_id)
 
                 # data_collector agent 상태 체크
                 error_msg = await check_agent_status(conn, "data_collector", self.workflow_id)
@@ -105,7 +109,7 @@ IMPORTANT:
 
                 # DB에 결과 저장
                 await save_agent_response(conn, "budget_manager", self.workflow_id, "completed", response_text)
-
+                await notify_workflow_update(self.workflow_id)
                 self.logger.info(f"BudgetManagerAgent: saved output to DB for workflow {self.workflow_id}")
 
                 return response_text
@@ -119,4 +123,7 @@ IMPORTANT:
                     "UPDATE workflow SET status = 'failed' WHERE workflow_id = $1",
                     self.workflow_id
                 )
+
+                await notify_workflow_update(self.workflow_id)
+
                 raise e

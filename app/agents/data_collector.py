@@ -6,6 +6,7 @@ from app.agents.base import BaseAgent
 from datetime import datetime
 from app.db.utils import save_agent_response
 from app.db.database import connect_db
+from app.api.websocket import notify_workflow_update
 
 class DataCollectorAgent(BaseAgent):
     async def run(self):
@@ -17,6 +18,9 @@ class DataCollectorAgent(BaseAgent):
                     "UPDATE data_collector SET status = 'running', started_at = $1 WHERE workflow_id = $2",
                     datetime.utcnow(), self.workflow_id
                 )
+
+                # 상태 변경 알림 웹소켓 푸시
+                await notify_workflow_update(self.workflow_id)
 
                 client = OpenAI(
                     base_url="https://api.deepauto.ai/openai/v1",
@@ -92,6 +96,9 @@ IMPORTANT:
                 # DB에 저장
                 await save_agent_response(conn, "data_collector", self.workflow_id, "completed", response_text)
 
+                # 상태 변경 알림 푸시
+                await notify_workflow_update(self.workflow_id)
+
                 self.logger.info(f"DataCollectorAgent: saved output to DB for workflow {self.workflow_id}")
 
                 return response_text
@@ -101,9 +108,13 @@ IMPORTANT:
                 error_response = {"error": str(e)}
                 # 실패 시 status = failed, 에러 메시지 저장
                 await save_agent_response(conn, "data_collector", self.workflow_id, "failed", error_response)
+
                 # 워크플로우 상태도 failed로 업데이트
                 await conn.execute(
                     "UPDATE workflow SET status = 'failed' WHERE workflow_id = $1",
                     self.workflow_id
-                )                
+                )
+
+                # 상태 변경 알림 푸시
+                await notify_workflow_update(self.workflow_id)                
                 raise e

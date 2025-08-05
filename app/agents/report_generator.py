@@ -7,6 +7,7 @@ from datetime import datetime
 from app.db.utils import save_agent_response
 from app.db.database import connect_db
 from app.agents.utils import check_agent_status
+from app.api.websocket import notify_workflow_update
 
 class ReportGeneratorAgent(BaseAgent):
     async def run(self):
@@ -18,6 +19,8 @@ class ReportGeneratorAgent(BaseAgent):
                     "UPDATE report_generator SET status = 'running', started_at = $1 WHERE workflow_id = $2",
                     datetime.utcnow(), self.workflow_id
                 )
+
+                await notify_workflow_update(self.workflow_id)
 
                 # ItineraryBuilder agent 상태 체크
                 error_msg = await check_agent_status(conn, "itinerary_builder", self.workflow_id)
@@ -116,13 +119,15 @@ Task:
                 # response_text를 JSON으로 감싸서 저장
                 json_wrapped = json.dumps({"markdown": response_text})
                 await save_agent_response(conn, "report_generator", self.workflow_id, "completed", json_wrapped)
-                
+
                 # workflow도 업데이트
                 await conn.execute(
                     "UPDATE workflow SET status = 'completed', ended_at = $1 WHERE workflow_id = $2",
                     datetime.utcnow(),
                     self.workflow_id
                 )
+
+                await notify_workflow_update(self.workflow_id)
                 self.logger.info(f"ReportGeneratorAgent: saved output to DB for workflow {self.workflow_id}")
 
                 return response_text
@@ -135,4 +140,7 @@ Task:
                     "UPDATE workflow SET status = 'failed' WHERE workflow_id = $1",
                     self.workflow_id
                 )
+
+                await notify_workflow_update(self.workflow_id)
+
                 raise e

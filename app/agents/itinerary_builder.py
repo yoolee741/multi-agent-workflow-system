@@ -7,6 +7,7 @@ from datetime import datetime
 from app.db.utils import save_agent_response  # DB 저장 함수 import
 from app.db.database import connect_db  # DB 커넥션 함수 import
 from app.agents.utils import check_agent_status
+from app.api.websocket import notify_workflow_update
 
 class ItineraryBuilderAgent(BaseAgent):
     async def run(self):
@@ -18,6 +19,8 @@ class ItineraryBuilderAgent(BaseAgent):
                     "UPDATE itinerary_builder SET status = 'running', started_at = $1 WHERE workflow_id = $2",
                     datetime.utcnow(), self.workflow_id
                 )
+
+                await notify_workflow_update(self.workflow_id)
 
                 # DB에서 data_collector agent 결과 읽기
                 record = await conn.fetchrow(
@@ -101,6 +104,8 @@ IMPORTANT:
                 # DB에 결과 저장
                 await save_agent_response(conn, "itinerary_builder", self.workflow_id, "completed", response_text)
 
+                await notify_workflow_update(self.workflow_id)
+                
                 self.logger.info(f"ItineraryBuilderAgent: saved output to DB for workflow {self.workflow_id}")
 
                 return response_text
@@ -114,4 +119,6 @@ IMPORTANT:
                     "UPDATE workflow SET status = 'failed' WHERE workflow_id = $1",
                     self.workflow_id
                 )
+
+                await notify_workflow_update(self.workflow_id)
                 raise e
