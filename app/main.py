@@ -8,20 +8,16 @@ load_dotenv()
 app = FastAPI()
 
 class WorkflowRequest(BaseModel):
-    workflow_id: str
-    input_path: str
-    output_path: str
+    user_name: str
 
 @app.post("/workflow/start")
 async def start_workflow(req: WorkflowRequest):
-    results = await run_workflow(
-        req.workflow_id,
-        req.input_path,
-        req.output_path,
+    result = await run_workflow(
+        req.user_name,
     )
     return {
-        "workflow_id": req.workflow_id,
-        "results": results,
+        "workflow_id": result["workflow_id"],
+        "results": result["results"],
     }
 
 @app.get("/")

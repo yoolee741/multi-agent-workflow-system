@@ -11,7 +11,7 @@ comment on table users is '유저 테이블';
 comment on column users.user_id is '유저 고유 ID';
 comment on column users.created_at is '생성일시';
 comment on column users.name is '유저 - 과제용 임시 아이디, 비밀번호 X';
-comment on column users.auth_token is 'jwt 토큰 - 권한 확인용 토큰 (유효기간 만료 시 재발급 로직은 반영X)';
+comment on column users.auth_token is '권한 확인용 토큰 (유효기간 만료 시 재발급 로직은 반영X)';
 
 -- 워크플로우 상태 Enum 타입 생성
 do $$
@@ -28,7 +28,7 @@ create table if not exists workflow
     created_at timestamptz not null default current_timestamp,
     model varchar(255) not null default 'openai/gpt-4o-mini-2024-07-18',
     user_id integer references users (user_id) on delete cascade, 
-    status status_enum not null default 'pending'
+    status status_enum not null default 'running'
 );
 comment on table workflow is 'workflow 테이블';
 comment on column workflow.workflow_id is '워크플로우 고유 ID';

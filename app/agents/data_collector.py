@@ -3,17 +3,28 @@ import json
 from pathlib import Path
 from openai import OpenAI
 from app.agents.base import BaseAgent
+from datetime import datetime
+from app.db.utils import save_agent_response
+from app.db.database import connect_db
 
 class DataCollectorAgent(BaseAgent):
     async def run(self):
-        try:
-            client = OpenAI(
-                base_url="https://api.deepauto.ai/openai/v1",
-                api_key=os.getenv("API_KEY"),
-            )
+        pool = await connect_db()
+        async with pool.acquire() as conn:
+            try:
+                # 작업 시작 시 status = running, started_at 갱신
+                await conn.execute(
+                    "UPDATE data_collector SET status = 'running', started_at = $1 WHERE workflow_id = $2",
+                    datetime.utcnow(), self.workflow_id
+                )
 
-            system_prompt = "You are the Data Collector agent."
-            user_prompt = """
+                client = OpenAI(
+                    base_url="https://api.deepauto.ai/openai/v1",
+                    api_key=os.getenv("API_KEY"),
+                )
+
+                system_prompt = "You are the Data Collector agent."
+                user_prompt = """
 You are the Data Collector agent.
 
 Input:
@@ -60,34 +71,39 @@ IMPORTANT:
 4. Save this JSON to a file named japan_trip_plan.json.
 """
 
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
 
-            response_text = ""
+                response_text = ""
 
-            chat_completion = client.chat.completions.create(
-                model="openai/gpt-4o-mini-2024-07-18",
-                messages=messages,
-                stream=True,
-            )
+                chat_completion = client.chat.completions.create(
+                    model="openai/gpt-4o-mini-2024-07-18",
+                    messages=messages,
+                    stream=True,
+                )
 
-            for chunk in chat_completion:
-                delta = chunk.choices[0].delta
-                if delta.content:
-                    response_text += delta.content
+                for chunk in chat_completion:
+                    delta = chunk.choices[0].delta
+                    if delta.content:
+                        response_text += delta.content
 
-            # TODO: 파일 저장 대신 DB에 저장
-            # await save_agent_response(db, self.agent_id, response_text)
+                # DB에 저장
+                await save_agent_response(conn, "data_collector", self.workflow_id, "completed", response_text)
 
-            # TODO: DB 저장시 아래 로직 제거
-            output_file = self.output_path / "japan_trip_plan.json"
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(response_text, encoding="utf-8")
+                self.logger.info(f"DataCollectorAgent: saved output to DB for workflow {self.workflow_id}")
 
-            self.logger.info(f"DataCollectorAgent: saved output to {output_file}")
+                return response_text
 
-        except Exception as e:
-            self.logger.error(f"DataCollectorAgent run error: {e}")
-            # TODO: 워크플로우/agent 상태 업데이트 등 추가 처리
+            except Exception as e:
+                self.logger.error(f"DataCollectorAgent run error: {e}")
+                error_response = {"error": str(e)}
+                # 실패 시 status = failed, 에러 메시지 저장
+                await save_agent_response(conn, "data_collector", self.workflow_id, "failed", error_response)
+                # 워크플로우 상태도 failed로 업데이트
+                await conn.execute(
+                    "UPDATE workflow SET status = 'failed' WHERE workflow_id = $1",
+                    self.workflow_id
+                )                
+                raise e

@@ -14,13 +14,13 @@ help: ## Make 설명
 	done
 
 check-docker: ## 도커 체크
-	docker --version && docker-compose --version
+	docker --version && docker compose version
 
 local-run: ## 로컬 서버 실행
-	docker-compose --env-file .env up -d && docker-compose logs -f
+	docker compose --env-file .env up -d && docker compose logs -f
 
 clean: ## 도커 종료
-	docker-compose down
+	docker compose down
 
 rebuild: ## 도커 재빌드
-	docker-compose build
+	docker compose build
