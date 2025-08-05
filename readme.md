@@ -7,7 +7,7 @@
 - `API_KEY` 설정
 - `make help`로 사용 가능한 명령어 확인 (Makefile이 설치된 경우)
 
----
+
 
 ### 🔧 환경 변수 설정
 
@@ -46,13 +46,21 @@ docker compose version
 # 로컬 환경에서 애플리케이션 실행
 docker compose --env-file .env up -d
 docker compose logs -f
----
+```
 
-📦 프로젝트 테스트
 
----
+## 📦 프로젝트 테스트
+*TODO: 
+1. workflow 실행 중 클라이언트가 접속 시도 한 경우 
+<img width="11<img width="1156" height="674" alt="스크린샷 2025-08-06 오전 8 17 01" src="https://github.com/user-attachments/assets/9fa2d5f6-3c4f-4ab1-ae5c-4449fc3b3676" />
 
-🗂️ DB ERD
+2. workflow 종료 후 접속한 경우
+<img width="1156" height="674" alt="스크린샷 2025-08-06 오전 8 17 01" src="https://github.com/user-attachments/assets/63ad3471-c3af-4b75-b826-9b150aaa3155" />
+
+3. 포스트맨 사용법
+4. 사용자 정보 공유
+
+## 🗂️ DB ERD
 DB ERD는 아래의 링크를 참고해주세요.
 🔗 https://drawsql.app/teams/mnl/diagrams/multi-agent-workflow-system
 
