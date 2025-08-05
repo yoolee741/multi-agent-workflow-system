@@ -1,6 +1,7 @@
-# Agent 공통 베이스 
+# Agent 공통 베이스
 import logging
 from abc import ABC, abstractmethod
+
 
 class BaseAgent(ABC):
     def __init__(self, workflow_id: str):

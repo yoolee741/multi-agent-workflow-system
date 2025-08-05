@@ -1,13 +1,16 @@
-import os
 import json
-from pathlib import Path
-from openai import OpenAI
-from app.agents.base import BaseAgent
+import os
 from datetime import datetime
-from app.db.utils import save_agent_response
-from app.db.database import connect_db
+from pathlib import Path
+
+from openai import OpenAI
+
+from app.agents.base import BaseAgent
 from app.agents.utils import check_agent_status
 from app.api.websocket import notify_workflow_update
+from app.db.database import connect_db
+from app.db.utils import save_agent_response
+
 
 class ReportGeneratorAgent(BaseAgent):
     async def run(self):
@@ -17,42 +20,59 @@ class ReportGeneratorAgent(BaseAgent):
                 # 시작 상태 업데이트
                 await conn.execute(
                     "UPDATE report_generator SET status = 'running', started_at = $1 WHERE workflow_id = $2",
-                    datetime.utcnow(), self.workflow_id
+                    datetime.utcnow(),
+                    self.workflow_id,
                 )
 
                 await notify_workflow_update(self.workflow_id)
 
                 # ItineraryBuilder agent 상태 체크
-                error_msg = await check_agent_status(conn, "itinerary_builder", self.workflow_id)
+                error_msg = await check_agent_status(
+                    conn, "itinerary_builder", self.workflow_id
+                )
                 if error_msg:
                     self.logger.error(error_msg)
-                    await save_agent_response(conn, "report_generator", self.workflow_id, "failed", {"error": error_msg})
+                    await save_agent_response(
+                        conn,
+                        "report_generator",
+                        self.workflow_id,
+                        "failed",
+                        {"error": error_msg},
+                    )
                     return
 
                 # BudgetManager agent 상태 체크
-                error_msg = await check_agent_status(conn, "budget_manager", self.workflow_id)
+                error_msg = await check_agent_status(
+                    conn, "budget_manager", self.workflow_id
+                )
                 if error_msg:
                     self.logger.error(error_msg)
-                    await save_agent_response(conn, "report_generator", self.workflow_id, "failed", {"error": error_msg})
+                    await save_agent_response(
+                        conn,
+                        "report_generator",
+                        self.workflow_id,
+                        "failed",
+                        {"error": error_msg},
+                    )
                     return
 
                 # response 데이터 읽기 (여기서는 이미 존재한다고 가정)
                 itinerary_record = await conn.fetchrow(
                     "SELECT response FROM itinerary_builder WHERE workflow_id = $1",
-                    self.workflow_id
+                    self.workflow_id,
                 )
                 budget_record = await conn.fetchrow(
                     "SELECT response FROM budget_manager WHERE workflow_id = $1",
-                    self.workflow_id
+                    self.workflow_id,
                 )
 
-                itinerary_json = itinerary_record['response']
+                itinerary_json = itinerary_record["response"]
                 if isinstance(itinerary_json, str):
                     itinerary_data = json.loads(itinerary_json)
                 else:
                     itinerary_data = itinerary_json
 
-                budget_json = budget_record['response']
+                budget_json = budget_record["response"]
                 if isinstance(budget_json, str):
                     budget_data = json.loads(budget_json)
                 else:
@@ -118,27 +138,37 @@ Task:
 
                 # response_text를 JSON으로 감싸서 저장
                 json_wrapped = json.dumps({"markdown": response_text})
-                await save_agent_response(conn, "report_generator", self.workflow_id, "completed", json_wrapped)
+                await save_agent_response(
+                    conn,
+                    "report_generator",
+                    self.workflow_id,
+                    "completed",
+                    json_wrapped,
+                )
 
                 # workflow도 업데이트
                 await conn.execute(
                     "UPDATE workflow SET status = 'completed', ended_at = $1 WHERE workflow_id = $2",
                     datetime.utcnow(),
-                    self.workflow_id
+                    self.workflow_id,
                 )
 
                 await notify_workflow_update(self.workflow_id)
-                self.logger.info(f"ReportGeneratorAgent: saved output to DB for workflow {self.workflow_id}")
+                self.logger.info(
+                    f"ReportGeneratorAgent: saved output to DB for workflow {self.workflow_id}"
+                )
 
                 return response_text
 
             except Exception as e:
                 self.logger.error(f"ReportGeneratorAgent run error: {e}")
                 error_response = {"error": str(e)}
-                await save_agent_response(conn, "report_generator", self.workflow_id, "failed", error_response)
+                await save_agent_response(
+                    conn, "report_generator", self.workflow_id, "failed", error_response
+                )
                 await conn.execute(
                     "UPDATE workflow SET status = 'failed' WHERE workflow_id = $1",
-                    self.workflow_id
+                    self.workflow_id,
                 )
 
                 await notify_workflow_update(self.workflow_id)

@@ -1,10 +1,11 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from app.api.workflow import run_workflow  
-from dotenv import load_dotenv
-from fastapi import FastAPI, WebSocket, Query
-from app.api.websocket import websocket_endpoint
 import logging
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Query, WebSocket
+from pydantic import BaseModel
+
+from app.api.websocket import websocket_endpoint
+from app.api.workflow import run_workflow
 
 load_dotenv()
 
@@ -15,17 +16,18 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
 )
 
+
 class WorkflowRequest(BaseModel):
     user_name: str
+
 
 @app.post("/workflow/start")
 async def start_workflow(req: WorkflowRequest):
     result = await run_workflow(
         req.user_name,
     )
-    return {
-        "workflow_id": result["workflow_id"]
-    }
+    return {"workflow_id": result["workflow_id"]}
+
 
 @app.get("/")
 def root():

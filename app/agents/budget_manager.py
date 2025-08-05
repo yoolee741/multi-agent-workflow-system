@@ -1,13 +1,16 @@
-import os
 import json
-from pathlib import Path
-from openai import OpenAI
-from app.agents.base import BaseAgent
+import os
 from datetime import datetime
-from app.db.utils import save_agent_response  # DB 저장 함수
-from app.db.database import connect_db
+from pathlib import Path
+
+from openai import OpenAI
+
+from app.agents.base import BaseAgent
 from app.agents.utils import check_agent_status  # 상태 체크 함수 import
 from app.api.websocket import notify_workflow_update
+from app.db.database import connect_db
+from app.db.utils import save_agent_response  # DB 저장 함수
+
 
 class BudgetManagerAgent(BaseAgent):
     async def run(self):
@@ -17,26 +20,35 @@ class BudgetManagerAgent(BaseAgent):
                 # 시작 상태 업데이트
                 await conn.execute(
                     "UPDATE budget_manager SET status = 'running', started_at = $1 WHERE workflow_id = $2",
-                    datetime.utcnow(), self.workflow_id
+                    datetime.utcnow(),
+                    self.workflow_id,
                 )
 
                 # 상태 변경 알림 웹소켓 푸시
                 await notify_workflow_update(self.workflow_id)
 
                 # data_collector agent 상태 체크
-                error_msg = await check_agent_status(conn, "data_collector", self.workflow_id)
+                error_msg = await check_agent_status(
+                    conn, "data_collector", self.workflow_id
+                )
                 if error_msg:
                     self.logger.error(error_msg)
-                    await save_agent_response(conn, "budget_manager", self.workflow_id, "failed", {"error": error_msg})
+                    await save_agent_response(
+                        conn,
+                        "budget_manager",
+                        self.workflow_id,
+                        "failed",
+                        {"error": error_msg},
+                    )
                     return
 
                 # DB에서 data_collector agent 결과 읽기
                 record = await conn.fetchrow(
                     "SELECT response FROM data_collector WHERE workflow_id = $1",
-                    self.workflow_id
+                    self.workflow_id,
                 )
 
-                trip_plan_json = record['response']
+                trip_plan_json = record["response"]
                 if isinstance(trip_plan_json, str):
                     trip_plan_data = json.loads(trip_plan_json)
                 else:
@@ -108,20 +120,26 @@ IMPORTANT:
                         response_text += delta.content
 
                 # DB에 결과 저장
-                await save_agent_response(conn, "budget_manager", self.workflow_id, "completed", response_text)
+                await save_agent_response(
+                    conn, "budget_manager", self.workflow_id, "completed", response_text
+                )
                 await notify_workflow_update(self.workflow_id)
-                self.logger.info(f"BudgetManagerAgent: saved output to DB for workflow {self.workflow_id}")
+                self.logger.info(
+                    f"BudgetManagerAgent: saved output to DB for workflow {self.workflow_id}"
+                )
 
                 return response_text
 
             except Exception as e:
                 self.logger.error(f"BudgetManagerAgent run error: {e}")
                 error_response = {"error": str(e)}
-                await save_agent_response(conn, "budget_manager", self.workflow_id, "failed", error_response)
+                await save_agent_response(
+                    conn, "budget_manager", self.workflow_id, "failed", error_response
+                )
                 # 워크플로우 상태도 failed로 업데이트
                 await conn.execute(
                     "UPDATE workflow SET status = 'failed' WHERE workflow_id = $1",
-                    self.workflow_id
+                    self.workflow_id,
                 )
 
                 await notify_workflow_update(self.workflow_id)

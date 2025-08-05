@@ -1,7 +1,11 @@
-from fastapi import WebSocket, WebSocketDisconnect, Query, status
-from typing import Dict, List
-from app.db.database import verify_auth_token, check_workflow_belongs_to_user, get_full_workflow_status_join
 from datetime import datetime
+from typing import Dict, List
+
+from fastapi import Query, WebSocket, WebSocketDisconnect, status
+
+from app.db.database import (check_workflow_belongs_to_user,
+                             get_full_workflow_status_join, verify_auth_token)
+
 
 def convert_datetime_to_str(obj):
     if isinstance(obj, dict):
@@ -12,6 +16,7 @@ def convert_datetime_to_str(obj):
         return obj.isoformat()
     else:
         return obj
+
 
 class ConnectionManager:
     def __init__(self):
@@ -42,7 +47,9 @@ class ConnectionManager:
             for connection in self.active_connections[workflow_id]:
                 await connection.send_json(message)
 
+
 manager = ConnectionManager()
+
 
 async def websocket_endpoint(
     websocket: WebSocket,
@@ -52,7 +59,9 @@ async def websocket_endpoint(
     # 1) 토큰 검증 -> user_id 반환 또는 None
     user_id = await verify_auth_token(auth_token)
     if not user_id:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)  # 4008: Policy Violation
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION
+        )  # 4008: Policy Violation
         return
 
     # 2) 권한 체크: workflow_id가 user_id 소유인지 확인
@@ -70,6 +79,7 @@ async def websocket_endpoint(
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(workflow_id, websocket)
+
 
 # WebSocket 상태 변경 알림용 함수
 async def notify_workflow_update(workflow_id: str):
