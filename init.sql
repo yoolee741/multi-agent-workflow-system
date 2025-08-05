@@ -36,7 +36,7 @@ comment on table workflow is 'workflow 테이블';
 comment on column workflow.workflow_id is '워크플로우 고유 ID';
 comment on column workflow.created_at is '생성 일시';
 comment on column workflow.model is '사용된 모델 이름 (예: openai/gpt-4o)';
-comment on column workflow.user_id is 'users 테이블의 외래키 - 해당 에이전트를 생성한 유저 ID';
+comment on column workflow.user_id is 'users 테이블의 외래키 - 해당 워크플로우를 생성한 유저 ID';
 comment on column workflow.started_at is '시작 시간';
 comment on column workflow.ended_at is '종료 시간';
 comment on column workflow.status is 'workflow의 상태 - `pending`, `running`, `completed`, `failed`';
