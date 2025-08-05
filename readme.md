@@ -1,7 +1,9 @@
 
 ## 📦 프로젝트 설정 및 실행 가이드
 
-이 프로젝트를 시작하기 전에 아래 안내에 따라 환경 설정을 진행해주세요.
+이 프로젝트를 시작하기 전에 아래 안내에 따라 환경 설정을 진행해주세요. 
+<br>
+<br>
 ✅ 시작하기 전 체크리스트
 - `.env` 파일 생성
 - `API_KEY` 설정
@@ -34,8 +36,9 @@
 ✅ make local-run
 로컬 환경에서 애플리케이션을 실행합니다.
 
+<br>
 
-❗ Makefile이 설치되어 있지 않은 경우  
+### ❗Makefile이 설치되어 있지 않은 경우  
 Makefile을 사용하지 않으실 경우, 아래와 같은 명령어를 직접 터미널에 입력해 주세요.
 
 ```bash
@@ -50,6 +53,16 @@ docker compose logs -f
 
 
 ## 📦 프로젝트 테스트
+* 테스트에 사용 가능한 사용자 리스트 및 정보
+```bash
+    user_name, auth_token
+    ('user01', 'token01'),
+    ('user02', 'token02'),
+    ('user03', 'token03'),
+    ('user04', 'token04'),
+    ('user05', 'token05');
+
+```
 *TODO: 
 1. workflow 실행 중 클라이언트가 접속 시도 한 경우 
 <img width="11<img width="1156" height="674" alt="스크린샷 2025-08-06 오전 8 17 01" src="https://github.com/user-attachments/assets/9fa2d5f6-3c4f-4ab1-ae5c-4449fc3b3676" />
@@ -58,9 +71,38 @@ docker compose logs -f
 <img width="1156" height="674" alt="스크린샷 2025-08-06 오전 8 17 01" src="https://github.com/user-attachments/assets/63ad3471-c3af-4b75-b826-9b150aaa3155" />
 
 3. 포스트맨 사용법
-4. 사용자 정보 공유
+
 
 ## 🗂️ DB ERD
 DB ERD는 아래의 링크를 참고해주세요.
 🔗 https://drawsql.app/teams/mnl/diagrams/multi-agent-workflow-system
 
+## 📁 프로젝트 구조
+```bash
+MULTI-AGENT-WORKFLOW-SYSTEM
+├── app
+│ ├── agents # 각 에이전트별 로직 구현
+│ │ ├── init.py # agents 패키지 초기화
+│ │ ├── base.py # 에이전트 공통 베이스 클래스
+│ │ ├── budget_manager.py # 예산 관리 에이전트
+│ │ ├── data_collector.py # 데이터 수집 에이전트
+│ │ ├── itinerary_builder.py # 여행 일정 구성 에이전트
+│ │ ├── report_generator.py # 보고서 생성 에이전트
+│ │ └── utils.py # 에이전트 관련 유틸 함수들
+│ ├── api # Rest API 및 WebSocket 핸들러
+│ │ ├── init.py # api 패키지 초기화
+│ │ ├── websocket.py # WebSocket 연결 및 관리 함수
+│ │ └── workflow.py # 워크플로우 관련 REST API 함수
+│ ├── db # 데이터베이스 연결 및 유틸
+│ │ ├── database.py # 데이터베이스 커넥션 풀 관리 함수 및 각 기능에 필요한 DB 작업 함수
+│ │ ├── utils.py # DB 관련 유틸 함수들
+│ │ └── main.py # 진입점
+├── .env.template # 환경변수 템플릿 파일
+├── .gitignore # Git 무시할 파일 및 폴더 설정
+├── docker-compose.yaml # Docker Compose 설정 파일
+├── Dockerfile # Docker 이미지 빌드 설정
+├── init.sql # DB 초기화 SQL 스크립트
+├── Makefile # 자주 쓰는 명령어 모음
+├── readme.md # 프로젝트 설명 및 문서
+└── requirements.txt # Python 의존성 목록
+```
