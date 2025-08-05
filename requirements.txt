@@ -1,6 +1,7 @@
 altair==5.5.0
 annotated-types==0.7.0
 anyio==4.9.0
+asyncpg==0.30.0
 attrs==25.3.0
 beautifulsoup4==4.13.4
 blinker==1.9.0

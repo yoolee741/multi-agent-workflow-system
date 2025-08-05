@@ -5,6 +5,7 @@ from app.agents.budget_manager import BudgetManagerAgent
 from app.agents.itinerary_builder import ItineraryBuilderAgent
 from app.agents.report_generator import ReportGeneratorAgent
 from app.db.database import connect_db
+from datetime import datetime
 
 async def run_workflow(user_name: str):
     pool = await connect_db()
@@ -18,8 +19,8 @@ async def run_workflow(user_name: str):
 
             workflow_id = str(uuid.uuid4())
             await conn.execute(
-                "INSERT INTO workflow (workflow_id, user_id) VALUES ($1, $2)",
-                workflow_id, user_id
+                "INSERT INTO workflow (workflow_id, user_id, started_at) VALUES ($1, $2, $3)",
+                workflow_id, user_id, datetime.utcnow()
             )
 
             agents = ["data_collector", "itinerary_builder", "budget_manager", "report_generator"]

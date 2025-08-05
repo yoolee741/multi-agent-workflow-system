@@ -119,7 +119,8 @@ Task:
                 
                 # workflow도 업데이트
                 await conn.execute(
-                    "UPDATE workflow SET status = 'completed' WHERE workflow_id = $1",
+                    "UPDATE workflow SET status = 'completed', ended_at = $1 WHERE workflow_id = $2",
+                    datetime.utcnow(),
                     self.workflow_id
                 )
                 self.logger.info(f"ReportGeneratorAgent: saved output to DB for workflow {self.workflow_id}")

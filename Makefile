@@ -24,3 +24,6 @@ clean: ## 도커 종료
 
 rebuild: ## 도커 재빌드
 	docker compose build
+
+reset-db: ## DB 리셋 (데이터 초기화)
+	rm -rf ./data    
