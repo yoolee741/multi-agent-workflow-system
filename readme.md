@@ -95,6 +95,9 @@ API 요청 시, 아래의 user_name과 auth_token 값을 참고하여 사용하�
 
 * workflow_id와 auth_token은 워크플로우 시작 시 받은 값을 사용하세요.
 
+### ❗DB GUI 툴(ex. DBeaver etc.)을 사용하여 연결하는 경우, 아래의 정보를 사용하여 연결하세요.<br>
+* host=localhost<br>
+* port=5433
 <br>
 
 ## 🗂️ DB ERD
