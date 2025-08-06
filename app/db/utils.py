@@ -15,9 +15,9 @@ async def save_agent_response(
 
     # started_at, ended_at은 현재 시간으로 자동 처리 가능하지만,
     # 필요한 경우 별도로 인자로 받을 수도 있음
-    from datetime import datetime
+    from datetime import datetime, timezone
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     await conn.execute(
         f"""

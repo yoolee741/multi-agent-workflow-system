@@ -1,26 +1,42 @@
 import json
 import os
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
 from openai import OpenAI
 
 from app.agents.base import BaseAgent
 from app.agents.utils import check_agent_status
-from app.api.websocket import notify_workflow_update
+from app.api.websocket import manager, notify_workflow_update
 from app.db.database import connect_db
 from app.db.utils import save_agent_response
 
 
 class ReportGeneratorAgent(BaseAgent):
     async def run(self):
+        """
+        리포트 생성 에이전트의 주요 실행 메서드.
+
+        - ItineraryBuilder와 BudgetManager 에이전트의 결과를 확인하고,
+        - 두 JSON 데이터를 결합해 여행 리포트를 생성.
+        - 리포트를 마크다운 형식으로 작성하여 DB에 저장.
+        - 워크플로우 상태를 완료로 업데이트하며,
+        - 진행 중 상태 변경을 WebSocket을 통해 실시간으로 알림.
+
+        예외 발생 시 실패 상태로 기록하고 상태 변경 알림을 보냄.
+
+        Returns:
+            str: 생성된 마크다운 리포트 텍스트.
+
+        Raises:
+            Exception: 내부 예외는 로깅 후 재발생하여 호출자에게 전달.
+        """
         pool = await connect_db()
         async with pool.acquire() as conn:
             try:
                 # 시작 상태 업데이트
                 await conn.execute(
                     "UPDATE report_generator SET status = 'running', started_at = $1 WHERE workflow_id = $2",
-                    datetime.utcnow(),
+                    datetime.now(timezone.utc),
                     self.workflow_id,
                 )
 
@@ -149,7 +165,7 @@ Task:
                 # workflow도 업데이트
                 await conn.execute(
                     "UPDATE workflow SET status = 'completed', ended_at = $1 WHERE workflow_id = $2",
-                    datetime.utcnow(),
+                    datetime.now(timezone.utc),
                     self.workflow_id,
                 )
 
@@ -157,7 +173,6 @@ Task:
                 self.logger.info(
                     f"ReportGeneratorAgent: saved output to DB for workflow {self.workflow_id}"
                 )
-
                 return response_text
 
             except Exception as e:

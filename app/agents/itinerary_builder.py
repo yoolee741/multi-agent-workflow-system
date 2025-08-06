@@ -1,7 +1,6 @@
 import json
 import os
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
 from openai import OpenAI
 
@@ -14,13 +13,28 @@ from app.db.utils import save_agent_response  # DB 저장 함수 import
 
 class ItineraryBuilderAgent(BaseAgent):
     async def run(self):
+        """
+        일정 생성 에이전트의 주요 실행 메서드.
+
+        - DataCollector 에이전트의 결과를 조회하고 상태를 확인.
+        - 여행 일정(5일간)을 도시별로 구성(도쿄 → 교토 → 오사카).
+        - 날씨, 관광지 영업시간 등을 고려한 상세 일정 JSON 생성.
+        - 생성된 일정을 DB에 저장하고 상태 변경을 WebSocket으로 알림.
+        - 예외 발생 시 실패 상태 기록 및 알림.
+
+        Returns:
+            str: 생성된 일정 JSON 텍스트.
+
+        Raises:
+            Exception: 내부 예외는 로깅 후 재발생하여 호출자에게 전달.
+        """
         pool = await connect_db()
         async with pool.acquire() as conn:
             try:
                 # 시작 상태 업데이트
                 await conn.execute(
                     "UPDATE itinerary_builder SET status = 'running', started_at = $1 WHERE workflow_id = $2",
-                    datetime.utcnow(),
+                    datetime.now(timezone.utc),
                     self.workflow_id,
                 )
 

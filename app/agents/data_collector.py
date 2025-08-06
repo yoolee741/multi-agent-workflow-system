@@ -1,7 +1,5 @@
-import json
 import os
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
 from openai import OpenAI
 
@@ -13,13 +11,27 @@ from app.db.utils import save_agent_response
 
 class DataCollectorAgent(BaseAgent):
     async def run(self):
+        """
+        데이터 수집 에이전트의 주요 실행 메서드.
+
+        - 에이전트 상태를 'running'으로 업데이트하고 시작 시간 기록.
+        - OpenAI API를 통해 여행 데이터(항공권, 호텔, 교통, 관광지, 날씨 등) 수집 및 JSON 형태로 생성.
+        - 결과를 데이터베이스에 저장하고 상태 변경을 WebSocket으로 알림.
+        - 오류 발생 시 에러 상태와 메시지를 DB에 기록하고 워크플로우 상태를 실패로 업데이트하며 알림 전송.
+
+        Returns:
+            str: OpenAI로부터 생성된 JSON 응답 텍스트.
+
+        Raises:
+            Exception: 내부 예외는 로깅 후 재발생하여 호출자에게 전달.
+        """
         pool = await connect_db()
         async with pool.acquire() as conn:
             try:
                 # 작업 시작 시 status = running, started_at 갱신
                 await conn.execute(
                     "UPDATE data_collector SET status = 'running', started_at = $1 WHERE workflow_id = $2",
-                    datetime.utcnow(),
+                    datetime.now(timezone.utc),
                     self.workflow_id,
                 )
 

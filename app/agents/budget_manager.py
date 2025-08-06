@@ -1,7 +1,6 @@
 import json
 import os
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
 from openai import OpenAI
 
@@ -14,13 +13,28 @@ from app.db.utils import save_agent_response  # DB 저장 함수
 
 class BudgetManagerAgent(BaseAgent):
     async def run(self):
+        """
+        예산 관리 에이전트의 주요 실행 메서드.
+
+        - 에이전트 상태를 'running'으로 업데이트하고 시작 시간 기록.
+        - DataCollectorAgent의 완료 상태 및 결과를 확인하여 유효하지 않으면 실패 처리.
+        - DataCollectorAgent의 응답(JSON) 데이터를 읽어 예산 배분, 지출, 잔액 계산 등의 작업을 OpenAI API를 통해 수행.
+        - 결과 JSON을 DB에 저장하고 상태 변경을 WebSocket으로 알림.
+        - 오류 발생 시 에러 상태 및 메시지를 DB에 기록하고 워크플로우 상태를 실패로 업데이트하며 알림 전송.
+
+        Returns:
+            str: OpenAI로부터 생성된 JSON 응답 텍스트.
+
+        Raises:
+            Exception: 내부 예외는 로깅 후 재발생하여 호출자에게 전달.
+        """
         pool = await connect_db()
         async with pool.acquire() as conn:
             try:
                 # 시작 상태 업데이트
                 await conn.execute(
                     "UPDATE budget_manager SET status = 'running', started_at = $1 WHERE workflow_id = $2",
-                    datetime.utcnow(),
+                    datetime.now(timezone.utc),
                     self.workflow_id,
                 )
 

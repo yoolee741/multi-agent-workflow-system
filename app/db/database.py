@@ -1,32 +1,43 @@
 import os
 import uuid
-from typing import AsyncGenerator
 
 import asyncpg
 from dotenv import load_dotenv
-from fastapi import Depends
 
 load_dotenv()  # .env 파일 읽기
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-_pool = None
+_pool = None  # 전역 변수
 
 
 async def connect_db():
-    global _pool
+    """
+    데이터베이스 연결 풀을 생성 및 반환.
+    기존 연결 풀이 없으면 새로 생성하며, 있으면 재사용.
+
+    Returns:
+        asyncpg.Pool: 비동기 DB 연결 풀 객체
+    """
+    global _pool  # 이 함수 안에서 전역 변수 _pool을 사용
     if _pool is None:
-        _pool = await asyncpg.create_pool(DATABASE_URL)
+        _pool = await asyncpg.create_pool(
+            DATABASE_URL
+        )  # 전역 변수 _pool에 새 값을 할당
     return _pool
 
 
-async def get_db_connection() -> AsyncGenerator[asyncpg.Connection, None]:
-    pool = await connect_db()
-    async with pool.acquire() as connection:
-        yield connection
-
-
 async def get_full_workflow_status_join(workflow_id: str):
+    """
+    주어진 workflow_id에 대해 workflow 및 관련 agent들의 상태와 결과를 조인하여 조회.
+
+    Args:
+        workflow_id (str): 조회할 워크플로우 ID
+
+    Returns:
+        dict | None: workflow 기본 정보와 각 agent별 상태 및 결과를 포함하는 딕셔너리,
+                     workflow가 없으면 None 반환
+    """
     async with _pool.acquire() as conn:
         row = await conn.fetchrow(
             """
@@ -126,6 +137,15 @@ async def get_full_workflow_status_join(workflow_id: str):
 
 
 async def verify_auth_token(token: str) -> int | None:
+    """
+    인증 토큰을 검증하여 해당 토큰이 유효한 경우 user_id를 반환.
+
+    Args:
+        token (str): 인증 토큰 문자열
+
+    Returns:
+        int | None: 유효한 토큰인 경우 user_id 반환, 그렇지 않으면 None 반환
+    """
     pool = await connect_db()  # connect_db()가 _pool 초기화도 담당
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -137,6 +157,16 @@ async def verify_auth_token(token: str) -> int | None:
 
 
 async def check_workflow_belongs_to_user(workflow_id: str, user_id: int) -> bool:
+    """
+    주어진 workflow_id가 해당 user_id 소유인지 확인.
+
+    Args:
+        workflow_id (str): 워크플로우 고유 ID
+        user_id (int): 사용자 ID
+
+    Returns:
+        bool: 소유주이면 True, 아니면 False
+    """
     pool = await connect_db()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(

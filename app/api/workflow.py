@@ -1,6 +1,6 @@
 import asyncio
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.agents.budget_manager import BudgetManagerAgent
 from app.agents.data_collector import DataCollectorAgent
@@ -9,12 +9,25 @@ from app.agents.report_generator import ReportGeneratorAgent
 from app.db.database import connect_db
 
 
-async def _run_agents_in_background(workflow_id: str) -> list:
-    """Agent를 ㅂ백그라운드에서 실행
-    Inputs:
-        workflow_id: str: 워크플로우 아이디
+async def _run_agents_in_background(workflow_id: str) -> list | None:
+    """
+    주어진 workflow_id로 여러 Agent를 순차 및 병렬로 실행하는 비동기 함수.
+
+    실행 순서:
+    1) DataCollectorAgent 실행 (실패 시 이후 단계 실행 안 함)
+    2) BudgetManagerAgent와 ItineraryBuilderAgent 병렬 실행
+    3) ReportGeneratorAgent 실행
+
+    각 Agent 실행 결과(성공, 실패, 결과 메시지 등)를 리스트에 저장.
+
+    Args:
+        workflow_id (str): 실행할 워크플로우의 고유 ID
+
     Returns:
-        list[dict]:
+        list[dict] | None: 각 Agent 실행 결과 리스트 혹은 DataCollectorAgent 실패 시 None 반환
+
+    예외:
+        내부에서 예외를 처리하며, 호출자에게는 예외를 전달X.
     """
     results = []
 
@@ -79,7 +92,7 @@ async def run_workflow(user_name: str):
                 "INSERT INTO workflow (workflow_id, user_id, started_at) VALUES ($1, $2, $3)",
                 workflow_id,
                 user_id,
-                datetime.utcnow(),
+                datetime.now(timezone.utc),
             )
 
             agents = [
