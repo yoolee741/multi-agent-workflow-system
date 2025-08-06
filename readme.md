@@ -8,8 +8,7 @@
 - `.env` 파일 생성
 - `API_KEY` 설정
 - `make help`로 사용 가능한 명령어 확인 (Makefile이 설치된 경우)
-
-
+<br>
 
 ### 🔧 환경 변수 설정
 
@@ -19,6 +18,8 @@
     cp .env.template .env
 ```
 `.env` 파일에서 API_KEY 값을 반드시 입력해주세요.
+
+<br>
 
 ### 🛠️ Makefile 사용법
 
@@ -50,10 +51,14 @@ docker compose version
 docker compose --env-file .env up -d
 docker compose logs -f
 ```
-
+<br>
 
 ## 📦 프로젝트 테스트
-* 테스트에 사용 가능한 사용자 리스트 및 정보
+테스트에 사용할 수 있는 사용자 계정과 인증 토큰 목록입니다.
+<br>
+
+API 요청 시, 아래의 user_name과 auth_token 값을 참고하여 사용하세요.<br>
+
 ```bash
     user_name, auth_token
     ('user01', 'token01'),
@@ -63,7 +68,7 @@ docker compose logs -f
     ('user05', 'token05');
 
 ```
-*TODO: 
+* 
 1. workflow 실행 중 클라이언트가 접속 시도 한 경우 
 <img width="11<img width="1156" height="674" alt="스크린샷 2025-08-06 오전 8 17 01" src="https://github.com/user-attachments/assets/9fa2d5f6-3c4f-4ab1-ae5c-4449fc3b3676" />
 
@@ -72,10 +77,15 @@ docker compose logs -f
 
 3. 포스트맨 사용법
 
+<br>
 
 ## 🗂️ DB ERD
 DB ERD는 아래의 링크를 참고해주세요.
+<br>
+
 🔗 https://drawsql.app/teams/mnl/diagrams/multi-agent-workflow-system
+
+<br>
 
 ## 📁 프로젝트 구조
 ```bash
