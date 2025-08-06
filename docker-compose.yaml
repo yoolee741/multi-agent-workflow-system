@@ -7,14 +7,14 @@ services:
       - .env
     volumes:
       - .:/code
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: "1G"
-        reservations:
-          cpus: "0.25"
-          memory: "256M"
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "1"
+    #       memory: "1G"
+    #     reservations:
+    #       cpus: "0.25"
+    #       memory: "256M"
     logging:
       driver: "json-file"
       options:
@@ -35,21 +35,21 @@ services:
     volumes:
       - ./data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: "2G"
-        reservations:
-          cpus: "0.5"
-          memory: "1G"
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "2"
+    #       memory: "2G"
+    #     reservations:
+    #       cpus: "0.5"
+    #       memory: "1G"
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "10"
     ports:
-      - "5433:5432" 
+      - "5433:5432"
     command:
       - postgres
       - -c
