@@ -35,7 +35,9 @@
 - 만약 Docker Compose가 구버전(docker-compose)인 경우, Makefile 내 명령어를 docker compose → docker-compose로 수정해주세요.
 
 ✅ make local-run
-로컬 환경에서 애플리케이션을 실행합니다.
+로컬 환경에서 애플리케이션을 실행합니다. <br>
+
+** ❗DB 셋팅 및 스키마 생성 완료 후 서버가 켜지도록 로직을 구현하였습니다. DB가 완전히 준비되면 자동으로 연결되고 서버가 시작될 것입니다. 
 
 <br>
 
@@ -95,6 +97,9 @@ API 요청 시, 아래의 user_name과 auth_token 값을 참고하여 사용하�
 
 * workflow_id와 auth_token은 워크플로우 시작 시 받은 값을 사용하세요.
 
+### ❗DB GUI 툴(ex. DBeaver etc.)을 사용하여 연결하는 경우, 아래의 정보를 사용하여 연결하세요.<br>
+* host=localhost<br>
+* port=5433
 <br>
 
 ## 🗂️ DB ERD
