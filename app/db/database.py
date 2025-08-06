@@ -2,6 +2,7 @@ import os
 import uuid
 
 import asyncpg
+import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()  # .env 파일 읽기
@@ -11,20 +12,31 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 _pool = None  # 전역 변수
 
 
-async def connect_db():
+async def connect_db(retries=5, delay=2):
     """
-    데이터베이스 연결 풀을 생성 및 반환.
-    기존 연결 풀이 없으면 새로 생성하며, 있으면 재사용.
+    데이터베이스 연결 풀 생성 및 반환.
+    연결 실패 시 재시도.
+
+    Args:
+        retries (int): 재시도 횟수 (기본 5)
+        delay (int): 재시도 간 대기 시간 (초, 기본 2초)
 
     Returns:
-        asyncpg.Pool: 비동기 DB 연결 풀 객체
+        asyncpg.Pool: DB 연결 풀 객체
     """
-    global _pool  # 이 함수 안에서 전역 변수 _pool을 사용
+    global _pool
     if _pool is None:
-        _pool = await asyncpg.create_pool(
-            DATABASE_URL
-        )  # 전역 변수 _pool에 새 값을 할당
-    return _pool
+        for attempt in range(retries):
+            try:
+                _pool = await asyncpg.create_pool(DATABASE_URL)
+                return _pool
+            except Exception as e:
+                if attempt == retries - 1:
+                    raise
+                print(f"DB 연결 실패, 재시도 {attempt + 1}/{retries}... {e}")
+                await asyncio.sleep(delay)
+    else:
+        return _pool
 
 
 async def get_full_workflow_status_join(workflow_id: str):
