@@ -35,7 +35,9 @@
 - 만약 Docker Compose가 구버전(docker-compose)인 경우, Makefile 내 명령어를 docker compose → docker-compose로 수정해주세요.
 
 ✅ make local-run
-로컬 환경에서 애플리케이션을 실행합니다.
+로컬 환경에서 애플리케이션을 실행합니다. <br>
+
+** ❗DB 셋팅 및 스키마 생성 완료 후 서버가 켜지도록 로직을 구현하였습니다. DB가 완전히 준비되면 자동으로 연결되고 서버가 시작될 것입니다. 
 
 <br>
 
