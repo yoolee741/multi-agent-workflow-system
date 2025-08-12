@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 
@@ -11,7 +12,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 _pool = None  # 전역 변수
 
 
-async def connect_db():
+async def connect_db() -> asyncpg.Pool:
     """
     데이터베이스 연결 풀을 생성 및 반환.
     기존 연결 풀이 없으면 새로 생성하며, 있으면 재사용.
@@ -21,13 +22,19 @@ async def connect_db():
     """
     global _pool  # 이 함수 안에서 전역 변수 _pool을 사용
     if _pool is None:
-        _pool = await asyncpg.create_pool(
-            DATABASE_URL
-        )  # 전역 변수 _pool에 새 값을 할당
+        try:
+            _pool = await asyncpg.create_pool(  # 커넥션 풀이 없으면 새로 만들고, 이미 있으면 기존 풀을 재사용
+                DATABASE_URL,
+                max_size=20,
+                timeout=60,  #
+            )  # 전역 변수 _pool에 새 값을 할당
+        except Exception as e:
+            logging.error(f"DB 커넥션 풀 생성 실패: {e}")
+            raise
     return _pool
 
 
-async def get_full_workflow_status_join(workflow_id: str):
+async def get_full_workflow_status_join(workflow_id: str) -> dict | None:
     """
     주어진 workflow_id에 대해 workflow 및 관련 agent들의 상태와 결과를 조인하여 조회.
 
@@ -38,55 +45,58 @@ async def get_full_workflow_status_join(workflow_id: str):
         dict | None: workflow 기본 정보와 각 agent별 상태 및 결과를 포함하는 딕셔너리,
                      workflow가 없으면 None 반환
     """
-    async with _pool.acquire() as conn:
-        row = await conn.fetchrow(
-            """
-            SELECT
-              w.*,
-              dc.data_collector_id AS dc_id,
-              dc.status AS dc_status,
-              dc.response AS dc_response,
-              dc.started_at AS dc_started_at,
-              dc.ended_at AS dc_ended_at,
+    pool = await connect_db()  # connection pool 가져오기
+    try:
+        async with pool.acquire() as conn:  # pool에서 conn 획득
+            row = await conn.fetchrow(
+                """
+                SELECT
+                  w.*,
+                  dc.data_collector_id AS dc_id,
+                  dc.status AS dc_status,
+                  dc.response AS dc_response,
+                  dc.started_at AS dc_started_at,
+                  dc.ended_at AS dc_ended_at,
 
-              ib.itinerary_builder_id AS ib_id,
-              ib.status AS ib_status,
-              ib.response AS ib_response,
-              ib.started_at AS ib_started_at,
-              ib.ended_at AS ib_ended_at,
+                  ib.itinerary_builder_id AS ib_id,
+                  ib.status AS ib_status,
+                  ib.response AS ib_response,
+                  ib.started_at AS ib_started_at,
+                  ib.ended_at AS ib_ended_at,
 
-              bm.budget_manager_id AS bm_id,
-              bm.status AS bm_status,
-              bm.response AS bm_response,
-              bm.started_at AS bm_started_at,
-              bm.ended_at AS bm_ended_at,
+                  bm.budget_manager_id AS bm_id,
+                  bm.status AS bm_status,
+                  bm.response AS bm_response,
+                  bm.started_at AS bm_started_at,
+                  bm.ended_at AS bm_ended_at,
 
-              rg.report_generator_id AS rg_id,
-              rg.status AS rg_status,
-              rg.response AS rg_response,
-              rg.started_at AS rg_started_at,
-              rg.ended_at AS rg_ended_at
+                  rg.report_generator_id AS rg_id,
+                  rg.status AS rg_status,
+                  rg.response AS rg_response,
+                  rg.started_at AS rg_started_at,
+                  rg.ended_at AS rg_ended_at
 
-            FROM workflow w
-            LEFT JOIN data_collector dc ON w.workflow_id = dc.workflow_id
-            LEFT JOIN itinerary_builder ib ON w.workflow_id = ib.workflow_id
-            LEFT JOIN budget_manager bm ON w.workflow_id = bm.workflow_id
-            LEFT JOIN report_generator rg ON w.workflow_id = rg.workflow_id
-            WHERE w.workflow_id = $1
-            """,
-            workflow_id,
-        )
+                FROM workflow w
+                LEFT JOIN data_collector dc ON w.workflow_id = dc.workflow_id
+                LEFT JOIN itinerary_builder ib ON w.workflow_id = ib.workflow_id
+                LEFT JOIN budget_manager bm ON w.workflow_id = bm.workflow_id
+                LEFT JOIN report_generator rg ON w.workflow_id = rg.workflow_id
+                WHERE w.workflow_id = $1
+                """,
+                workflow_id,
+            )
 
         if not row:
             return None
 
+        # workflow 관련 필드만 분리
         workflow_data = {
             k: row[k]
             for k in row.keys()
             if not k.startswith(("dc_", "ib_", "bm_", "rg_"))
         }
 
-        # UUID 필드들 문자열로 변환
+        # UUID 필드 문자열 변환
         for k, v in workflow_data.items():
             if isinstance(v, uuid.UUID):
                 workflow_data[k] = str(v)
@@ -96,36 +106,36 @@ async def get_full_workflow_status_join(workflow_id: str):
                 "id": str(row["dc_id"]) if row["dc_id"] else None,
                 "status": row["dc_status"],
                 "response": row["dc_response"],
-                "started_at": (
-                    str(row["dc_started_at"]) if row["dc_started_at"] else None
-                ),
+                "started_at": str(row["dc_started_at"])
+                if row["dc_started_at"]
+                else None,
                 "ended_at": str(row["dc_ended_at"]) if row["dc_ended_at"] else None,
             },
             "itinerary_builder": {
                 "id": str(row["ib_id"]) if row["ib_id"] else None,
                 "status": row["ib_status"],
                 "response": row["ib_response"],
-                "started_at": (
-                    str(row["ib_started_at"]) if row["ib_started_at"] else None
-                ),
+                "started_at": str(row["ib_started_at"])
+                if row["ib_started_at"]
+                else None,
                 "ended_at": str(row["ib_ended_at"]) if row["ib_ended_at"] else None,
             },
             "budget_manager": {
                 "id": str(row["bm_id"]) if row["bm_id"] else None,
                 "status": row["bm_status"],
                 "response": row["bm_response"],
-                "started_at": (
-                    str(row["bm_started_at"]) if row["bm_started_at"] else None
-                ),
+                "started_at": str(row["bm_started_at"])
+                if row["bm_started_at"]
+                else None,
                 "ended_at": str(row["bm_ended_at"]) if row["bm_ended_at"] else None,
             },
             "report_generator": {
                 "id": str(row["rg_id"]) if row["rg_id"] else None,
                 "status": row["rg_status"],
                 "response": row["rg_response"],
-                "started_at": (
-                    str(row["rg_started_at"]) if row["rg_started_at"] else None
-                ),
+                "started_at": str(row["rg_started_at"])
+                if row["rg_started_at"]
+                else None,
                 "ended_at": str(row["rg_ended_at"]) if row["rg_ended_at"] else None,
             },
         }
@@ -134,6 +144,9 @@ async def get_full_workflow_status_join(workflow_id: str):
             "workflow": workflow_data,
             "agents": agents,
         }
+    except Exception as e:
+        logging.error(f"get_full_workflow_status_join 실패: {e}")
+        raise
 
 
 async def verify_auth_token(token: str) -> int | None:
@@ -146,6 +159,8 @@ async def verify_auth_token(token: str) -> int | None:
     Returns:
         int | None: 유효한 토큰인 경우 user_id 반환, 그렇지 않으면 None 반환
     """
+    if not token:
+        return None  # 빈 문자열일 때 None 반환
     pool = await connect_db()  # connect_db()가 _pool 초기화도 담당
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -167,6 +182,8 @@ async def check_workflow_belongs_to_user(workflow_id: str, user_id: int) -> bool
     Returns:
         bool: 소유주이면 True, 아니면 False
     """
+    if not workflow_id or not user_id:
+        return False
     pool = await connect_db()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
