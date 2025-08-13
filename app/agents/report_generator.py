@@ -169,7 +169,7 @@ Task:
                     self.workflow_id,
                 )
 
-                await notify_workflow_update(self.workflow_id)
+                await notify_workflow_update(self.workflow_id, True)
                 self.logger.info(
                     f"ReportGeneratorAgent: saved output to DB for workflow {self.workflow_id}"
                 )

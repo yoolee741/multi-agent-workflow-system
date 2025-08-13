@@ -139,14 +139,22 @@ async def websocket_endpoint(
 
 
 # WebSocket 상태 변경 알림용 함수
-async def notify_workflow_update(workflow_id: str):
+async def notify_workflow_update(workflow_id: str, is_done: bool = False):
     """
     워크플로우 상태 변경 시, 해당 workflow에 연결된
     모든 WebSocket 클라이언트에 업데이트 내용을 방송.
 
     Args:
         workflow_id: 워크플로우 식별자
+        is_done: 리포트 생성까지 마무리 된건지 여부 -> disconnect 판별
     """
     latest_status = await get_full_workflow_status_join(workflow_id)
     latest_status = _convert_datetime_to_str(latest_status)
-    await manager.broadcast(workflow_id, {"type": "update", "data": latest_status})
+
+    status_type = "done" if is_done else "update"
+    await manager.broadcast(workflow_id, {"type": status_type, "data": latest_status})
+
+    if is_done and workflow_id in manager.active_connections:
+        for ws in list(manager.active_connections[workflow_id]):
+            await ws.close()
+            manager.disconnect(workflow_id, ws)
