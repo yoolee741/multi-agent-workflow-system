@@ -1,3 +1,11 @@
+ALLOWED_TABLES = {
+    "data_collector",
+    "itinerary_builder",
+    "budget_manager",
+    "report_generator",
+}
+
+
 async def check_agent_status(conn, agent_table: str, workflow_id: str) -> str | None:
     """
     특정 agent의 상태를 체크해서 오류 메시지를 반환하거나 정상인 경우 None을 반환.
@@ -10,6 +18,11 @@ async def check_agent_status(conn, agent_table: str, workflow_id: str) -> str | 
     반환값:
     - 오류 메시지(str) 또는 None (문제가 없으면)
     """
+
+    # 테이블명 체크를 통해 sql injection 공격 방지
+    if agent_table not in ALLOWED_TABLES:
+        raise ValueError(f"Invalid agent_table: {agent_table}")
+
     record = await conn.fetchrow(
         f"SELECT status, response FROM {agent_table} WHERE workflow_id = $1",
         workflow_id,
