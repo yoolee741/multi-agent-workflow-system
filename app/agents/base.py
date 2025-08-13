@@ -17,7 +17,7 @@ class BaseAgent(ABC):
 
     def __init__(self, workflow_id: str):
         self.workflow_id = workflow_id
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)  # agent 별 고유 로거
 
     @abstractmethod
     async def run(self):
