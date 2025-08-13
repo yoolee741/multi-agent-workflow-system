@@ -47,8 +47,11 @@ async def _run_agents_in_background(workflow_id: str) -> list | None:
     bm_agent = BudgetManagerAgent(workflow_id)
     ib_agent = ItineraryBuilderAgent(workflow_id)
     agent_tasks = [bm_agent.run(), ib_agent.run()]
-    parallel_results = await asyncio.gather(*agent_tasks, return_exceptions=True)
+    parallel_results = await asyncio.gather(
+        *agent_tasks, return_exceptions=True
+    )  # * => 리스트나 튜플 같은 반복 가능한 객체를 함수 호출 시 각각의 개별 인자로 펼쳐서 넘길 때 사용
 
+    # ex) agent, res => (bm_agent, parallel_results[0])
     for agent, res in zip([bm_agent, ib_agent], parallel_results):
         if isinstance(res, Exception):
             results.append(
