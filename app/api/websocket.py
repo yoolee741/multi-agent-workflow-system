@@ -10,7 +10,7 @@ from app.db.database import (
 )
 
 
-def convert_datetime_to_str(obj):
+def _convert_datetime_to_str(obj):
     """
     dict, list, datetime 객체를 재귀적으로 순회하며
     datetime 타입은 ISO 형식 문자열로 변환.
@@ -22,9 +22,9 @@ def convert_datetime_to_str(obj):
         datetime이 문자열로 변환된 동일 구조의 객체
     """
     if isinstance(obj, dict):
-        return {k: convert_datetime_to_str(v) for k, v in obj.items()}
+        return {k: _convert_datetime_to_str(v) for k, v in obj.items()}
     elif isinstance(obj, list):
-        return [convert_datetime_to_str(i) for i in obj]
+        return [_convert_datetime_to_str(i) for i in obj]
     elif isinstance(obj, datetime):
         return obj.isoformat()
     else:
@@ -40,7 +40,7 @@ class ConnectionManager:
 
     def __init__(self):
         """
-        활성 연결을 저장할 빈 딕셔너리를 초기화합니다.
+        활성 연결을 저장할 빈 딕셔너리를 초기화.
         """
         self.active_connections: Dict[str, List[WebSocket]] = {}
 
@@ -62,13 +62,13 @@ class ConnectionManager:
         initial_status = await get_full_workflow_status_join(workflow_id)
 
         # datetime 객체를 문자열로 변환
-        initial_status = convert_datetime_to_str(initial_status)
+        initial_status = _convert_datetime_to_str(initial_status)
 
         await websocket.send_json({"type": "init", "data": initial_status})
 
     def disconnect(self, workflow_id: str, websocket: WebSocket):
         """
-        WebSocket 연결을 연결 목록에서 제거합니다.
+        WebSocket 연결을 연결 목록에서 제거.
 
         Args:
             workflow_id: 워크플로우 식별자
@@ -82,7 +82,7 @@ class ConnectionManager:
     async def broadcast(self, workflow_id: str, message: dict):
         """
         특정 workflow에 연결된 모든 WebSocket 클라이언트에게
-        JSON 메시지를 전송합니다. 한 사용자가 여러 기기를 사용해 동일한 workflow에 연결을 시도할 경우를 고려하였습니다.
+        JSON 메시지를 전송. 한 사용자가 여러 기기를 사용해 동일한 workflow에 연결을 시도할 경우를 고려.
 
         Args:
             workflow_id: 워크플로우 식별자
@@ -102,7 +102,7 @@ async def websocket_endpoint(
     auth_token: str = Query(...),  # auth_token 쿼리 파라미터 필수
 ):
     """
-    WebSocket 엔드포인트 처리 함수입니다.
+    WebSocket 엔드포인트 처리 함수.
     - auth_token을 검증하여 사용자 권한 확인
     - 권한이 없으면 연결 종료
     - 권한이 있으면 연결 수락 및 유지
@@ -148,5 +148,5 @@ async def notify_workflow_update(workflow_id: str):
         workflow_id: 워크플로우 식별자
     """
     latest_status = await get_full_workflow_status_join(workflow_id)
-    latest_status = convert_datetime_to_str(latest_status)
+    latest_status = _convert_datetime_to_str(latest_status)
     await manager.broadcast(workflow_id, {"type": "update", "data": latest_status})
