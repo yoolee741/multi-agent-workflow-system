@@ -138,5 +138,5 @@ IMPORTANT:
                 )
 
                 # 상태 변경 알림 푸시
-                await notify_workflow_update(self.workflow_id)
+                await notify_workflow_update(self.workflow_id, False, True)
                 raise e
