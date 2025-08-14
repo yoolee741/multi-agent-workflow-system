@@ -156,6 +156,6 @@ IMPORTANT:
                     self.workflow_id,
                 )
 
-                await notify_workflow_update(self.workflow_id)
+                await notify_workflow_update(self.workflow_id, False, True)
 
                 raise e
