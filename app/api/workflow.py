@@ -66,6 +66,17 @@ async def _run_agents_in_background(workflow_id: str) -> list | None:
                 {"agent": agent.__class__.__name__, "status": "success", "result": res}
             )
 
+    # 게이트: 둘 중 하나라도 실패했으면 RG 중단 + 워크플로우 실패
+    if any(isinstance(r, Exception) for r in parallel_results):
+        pool = await connect_db()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE workflow SET status = 'failed', ended_at = $1 WHERE workflow_id = $2",
+                datetime.now(timezone.utc), workflow_id
+            )
+  
+        return  # 실패 시 이후 단계 건너뛰기
+
     rg_agent = ReportGeneratorAgent(workflow_id)
     try:
         rg_result = await rg_agent.run()
